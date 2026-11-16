@@ -1,0 +1,6 @@
+pdfplumber
+python-docx
+requests
+python-dotenv
+# optional: scanned PDFs  ->  pip install ocrmypdf  (also needs tesseract installed)
+# optional: old .doc files need LibreOffice installed (the 'soffice' command)
