@@ -10,6 +10,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from generation import DEFAULT_MODEL
+
 
 ROOT = Path(__file__).resolve().parent
 SUPPORTED_SUFFIXES = {".pdf", ".docx", ".doc"}
@@ -27,7 +29,7 @@ def main():
     load_dotenv(ROOT / ".env")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--model", default=os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"),
+        "--model", default=os.environ.get("GEMINI_MODEL", DEFAULT_MODEL),
         help="Gemini model ID (defaults to GEMINI_MODEL in .env)",
     )
     parser.add_argument("--workers", type=int, default=1, help="documents processed at once")

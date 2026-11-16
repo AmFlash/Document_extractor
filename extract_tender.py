@@ -37,7 +37,7 @@ from dotenv import load_dotenv
 
 from chunking import chunk_elements
 from document_parser import load_document
-from generation import ask_llm
+from generation import DEFAULT_MODEL, ask_llm
 from retriever import retrieve_all, merge_context
 
 HERE = Path(__file__).resolve().parent
@@ -305,7 +305,7 @@ def main():
     ap = argparse.ArgumentParser(description="Extract tender fields from PDF/DOCX/DOC into JSON")
     ap.add_argument("files", nargs="+")
     ap.add_argument(
-        "--model", default=os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"),
+        "--model", default=os.environ.get("GEMINI_MODEL", DEFAULT_MODEL),
         help="Gemini model ID (defaults to GEMINI_MODEL from .env)",
     )
     ap.add_argument("--max-context-chars", type=int, default=0, help="override how much text is sent to the model")

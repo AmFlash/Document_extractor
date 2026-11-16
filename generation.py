@@ -9,6 +9,8 @@ from urllib.parse import quote
 import requests
 
 
+DEFAULT_MODEL = "gemini-3.6-flash"
+
 LLM_SCHEMA = {
     "type": "object",
     "properties": {
@@ -46,11 +48,7 @@ def _gemini_schema(schema):
     return result
 
 
-def call_gemini(system, user, model):
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("Gemini API key is missing. Add GEMINI_API_KEY to the project .env file.")
-
+def _call_gemini(system, user, model, api_key):
     endpoint = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
         f"{quote(model, safe='')}:generateContent"
@@ -82,13 +80,14 @@ def call_gemini(system, user, model):
 
 
 def ask_llm(system_prompt, user, model):
-    if not os.environ.get("GEMINI_API_KEY"):
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
         raise RuntimeError("Gemini API key is missing. Add GEMINI_API_KEY to the project .env file.")
 
     last = None
     for attempt in range(3):
         try:
-            return call_gemini(system_prompt, user, model)
+            return _call_gemini(system_prompt, user, model, api_key)
         except Exception as error:
             last = error
             time.sleep(2 * (2 ** attempt))
