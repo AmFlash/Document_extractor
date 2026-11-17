@@ -1,48 +1,48 @@
+## 📂 File-by-File Breakdown
 
+### 1. `run_pipeline.py` (The Starter)
+* **Role:** Acts as the entry point for batch processing[cite: 8].
+* **What it does:** Scans the `samples/` directory for supported documents (`.pdf`, `.docx`, `.doc`), sets up output directories (`results/` and `output/`), and kicks off `extract_tender.py` as a subprocess with configurable worker threads[cite: 8].
 
-1. run_pipeline.py (The Starter)
-This is the main starter file. It checks the samples/ folder for PDF, DOCX, or DOC files, and creates results/ and output/ folders if they aren't there. Then, it runs the extract_tender.py script to process all the files and makes sure the final JSON files get saved properly.
+### 2. `extract_tender.py` (The Main Manager)
+* **Role:** Coordinates the end-to-end extraction logic for each file[cite: 4].
+* **What it does:** 
+  * Ingests documents and saves intermediate JSON artifacts (parsed layout, chunks, tables) into the output directory[cite: 4].
+  * Extracts the tender reference number using robust regex patterns (`get_tender_no`) and evaluates the evaluation mode (`detect_mode` for L1 vs. QCBS) without relying on the LLM[cite: 4].
+  * Combines the retriever and LLM call to build final outputs, performing optional secondary retries for weaker fields before writing out the final JSON[cite: 4].
 
-2. extract_tender.py (The Main)
-This script manages the whole job for each document:
+### 3. `document_parser.py` (The File Reader)
+* **Role:** Handles multi-format document parsing and text cleaning[cite: 2].
+* **What it does:**
+  * Uses `pdfplumber` for PDFs to extract layout elements, text lines, and tables while dynamically stripping out repeating headers/footers[cite: 2].
+  * Parses paragraphs and nested tables for Word documents (`.docx`)[cite: 2].
+  * Automatically converts legacy `.doc` files to `.docx` on the fly using headless LibreOffice if installed[cite: 2].
 
-It reads the document, pulls out the text and tables, and saves them as backup files in the output folder.
+### 4. `chunking.py` (The Text Cutter)
+* **Role:** Breaks unstructured text and layout elements into manageable pieces[cite: 1].
+* **What it does:**
+  * Flattens table rows into distinct readable units separated by boundary markers (`---`)[cite: 1].
+  * Identifies strong headings (`STRONG`) to prevent splitting sentences or clauses awkwardly[cite: 1].
+  * Controls chunk sizes using character caps (`min_chars`, `max_chars`) with small overlaps to maintain context continuity[cite: 1].
 
-It uses simple pattern matching to grab the tender number and figure out the evaluation style without even needing AI.
+### 5. `retriever.py` (The Smart Searcher)
+* **Role:** Filters out irrelevant document noise and retrieves context specifically tailored to each targeted field[cite: 7].
+* **What it does:**
+  * Computes BM25 keyword relevance scores across chunks using field-specific search queries[cite: 7].
+  * Boosts chunks matching key structural headers and applies Reciprocal Rank Fusion (RRF) to select the best passages[cite: 7].
+  * Stitches chosen chunks together in document order via `merge_context`, eliminating duplicates to keep the prompt concise[cite: 7].
 
-It searches for the important parts of the document, sends them to model, and checks the answers. If something looks missing or weak, it can do a wider search and try again before saving the final result.
+### 6. `generation.py` & `extraction_prompt.txt` (The AI Layer)
+* **Role:** Manages secure, schema-compliant communication with the Gemini model[cite: 5, 6].
+* **What it does:**
+  * `extraction_prompt.txt` defines strict system instructions enforcing verbatim extraction, strict table handling, and JSON-only output constraints[cite: 5].
+  * `generation.py` structures the API request (`:generateContent`), enforces output schemas (`LLM_SCHEMA`), locks temperature to `0` for deterministic outputs, and manages automatic retries with exponential backoff[cite: 6].
 
-3. document_parser.py (The File Reader)
-This file opens up messy PDF, Word, or old .doc files and cleans them up:
+---
 
-For PDFs, it reads text and tables page by page and removes repeating headers and footers.
+## 🚀 Usage Guide
 
-For Word files, it reads the paragraphs and tables. If it sees an old .doc file, it automatically uses LibreOffice in the background to convert it to .docx first.
-
-It gives back the raw text, a clean text version, and a neat list of all the parts inside the document.
-
-4. chunking.py (The Text Cutter)
-Structure aware chunking is done.Since tender documents are massive, this file chops them up into smaller, bite-sized pieces so they are easier to search through:
-
-It keeps table rows together and looks for headings so it doesn't cut sentences or paragraphs in half.
-
-It keeps each piece under a certain size limit and makes sure they slightly overlap so no details get lost.
-
-5. retriever.py (The Smart Searcher)
-Instead of dumping the whole tender document into the AI, this script finds only the specific sections that matter for each question:
-
-For reranking:
-
-It uses keyword matching (called BM25) to look for things like "annual turnover" or "similar work".
-
-It gives extra points to sections that match the right headings, then sorts and picks the best pieces.
-
-Finally, it glues those chosen pieces together into one clean text in the right order, making sure there are no duplicate parts.
-
-6. generation.py & extraction_prompt.txt (The AI Helper)
-This handles talking to the Gemini AI:
-
-extraction_prompt.txt is the instruction sheet for the AI. It tells it to extract the five required fields, copy the text word-for-word without rewriting it, ignore table lines, and output clean JSON only.
-
-generation.py actually sends the request to the Gemini API, forces it to follow the exact JSON rules, keeps the creativity setting at zero so the answers stay factual, and automatically tries again if the network drops.
-
+### 1. Installation
+Clone the repository and install the required dependencies:
+```bash
+pip install -r requirements.txt
